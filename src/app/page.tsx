@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Upload, Info, Camera } from 'lucide-react';
 import ExifReader from 'exifreader';
-import SimpleWatermarkEditor from '@/components/SimpleWatermarkEditor';
+import SimpleWatermarkEditor, { SimpleWatermarkEditorRef } from '@/components/SimpleWatermarkEditor';
 
 interface ExifData {
   [key: string]: any;
@@ -15,6 +15,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const watermarkEditorRef = useRef<SimpleWatermarkEditorRef>(null);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -45,7 +46,7 @@ export default function Home() {
     return String(value || '未知');
   };
 
-  const getImportantExifData = () => {
+  const getImportantExifData = (exifData?: ExifData | null) => {
     if (!exifData) return [];
 
     const importantKeys = [
@@ -70,9 +71,21 @@ export default function Home() {
       .filter(item => item.value !== '未知');
   };
 
+  const resultExifData = useMemo((
+  ) => {
+    return getImportantExifData(exifData);
+  }, [exifData]);
+
   const handleImageProcessed = (dataUrl: string) => {
     setProcessedImageUrl(dataUrl);
   };
+
+  // 当选中的图片变化时，通知水印编辑器加载新图片
+  useEffect(() => {
+    if (selectedImage && watermarkEditorRef.current) {
+      watermarkEditorRef.current.loadImageFromUrl(selectedImage);
+    }
+  }, [selectedImage]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -142,9 +155,9 @@ export default function Home() {
             {/* 水印编辑器 */}
             {selectedImage && (
               <SimpleWatermarkEditor
-                imageUrl={selectedImage}
-                exifData={getImportantExifData()}
+                ref={watermarkEditorRef}
                 onImageProcessed={handleImageProcessed}
+                exifData={resultExifData}
               />
             )}
 
@@ -178,7 +191,7 @@ export default function Home() {
               </div>
             ) : exifData ? (
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {getImportantExifData().map((item, index) => (
+                {resultExifData.map((item, index) => (
                   <div key={index} className="flex justify-between items-start p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                     <span className="font-medium text-slate-700 dark:text-slate-300 min-w-0 flex-1">
                       {item.label}
@@ -189,7 +202,7 @@ export default function Home() {
                   </div>
                 ))}
 
-                {getImportantExifData().length === 0 && (
+                {resultExifData.length === 0 && (
                   <p className="text-slate-500 dark:text-slate-400 text-center py-4">
                     未找到EXIF信息
                   </p>
