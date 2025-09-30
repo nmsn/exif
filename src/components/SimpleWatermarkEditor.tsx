@@ -27,13 +27,11 @@ function SimpleWatermarkEditor({
 
   // 初始化 Leafer.js 画布的独立函数
   const initializeLeaferApp = useCallback(() => {
-    debugger;
     // 确保 DOM 完全加载后再初始化 Leafer.js
     if (canvasRef.current && !leaferAppRef.current) {
       try {
         // 创建 Leafer 应用
 
-        debugger;
         leaferAppRef.current = new Leafer({
           view: canvasRef.current,
           width: 800,
@@ -189,50 +187,50 @@ function SimpleWatermarkEditor({
       leafer.add(image);
 
       // 添加半透明背景渐变
-      // const watermarkHeight = 100;
-      // const gradientRect = new Rect({
-      //   x: 0,
-      //   y: leafer.height - watermarkHeight,
-      //   width: leafer.width,
-      //   height: watermarkHeight,
-      //   fill: {
-      //     type: 'linear',
-      //     from: 'top',
-      //     to: 'bottom',
-      //     stops: [
-      //       { offset: 0, color: 'rgba(0, 0, 0, 0)' },
-      //       { offset: 1, color: 'rgba(0, 0, 0, 0.7)' },
-      //     ],
-      //   },
-      // });
+      const watermarkHeight = 100;
+      const gradientRect = new Rect({
+        x: 0,
+        y: leafer.height - watermarkHeight,
+        width: leafer.width,
+        height: watermarkHeight,
+        fill: {
+          type: 'linear',
+          from: 'top',
+          to: 'bottom',
+          stops: [
+            { offset: 0, color: 'rgba(0, 0, 0, 0)' },
+            { offset: 1, color: 'rgba(0, 0, 0, 0.7)' },
+          ],
+        },
+      });
 
-      // leafer.add(gradientRect);
+      leafer.add(gradientRect);
 
-      // // 添加EXIF信息文字
-      // const startY = leafer.height - 80;
-      // exifData.slice(0, 3).forEach((item, index) => {
-      //   const text = new Text({
-      //     text: `${item.label}: ${item.value}`,
-      //     x: 20,
-      //     y: startY + (index * 22),
-      //     fontSize: 14,
-      //     fontFamily: 'Arial',
-      //     fill: 'white',
-      //   });
-      //   leafer.add(text);
-      // });
+      // 添加EXIF信息文字
+      const startY = leafer.height - 80;
+      exifData.slice(0, 3).forEach((item, index) => {
+        const text = new Text({
+          text: `${item.label}: ${item.value}`,
+          x: 20,
+          y: startY + (index * 22),
+          fontSize: 14,
+          fontFamily: 'Arial',
+          fill: 'white',
+        });
+        leafer.add(text);
+      });
 
-      // // 强制同步渲染到 canvas
-      // if (leaferAppRef.current) {
-      //   try {
-      //     // 尝试强制刷新
-      //     leaferAppRef.current.forceRender?.();
-      //     // 等待一小段时间确保渲染完成
-      //     await new Promise(resolve => setTimeout(resolve, 200));
-      //   } catch (renderError) {
-      //     console.warn('强制渲染失败:', renderError);
-      //   }
-      // }
+      // 强制同步渲染到 canvas
+      if (leaferAppRef.current) {
+        try {
+          // 尝试强制刷新
+          leaferAppRef.current.forceRender?.();
+          // 等待一小段时间确保渲染完成
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (renderError) {
+          console.warn('强制渲染失败:', renderError);
+        }
+      }
 
       setIsProcessing(false);
       await updateProcessedImage();
@@ -265,67 +263,67 @@ function SimpleWatermarkEditor({
       leafer.add(image);
 
       // 添加装饰性边框
-      // const borderWidth = 20;
-      // const border = new Rect({
-      //   x: borderWidth / 2,
-      //   y: borderWidth / 2,
-      //   width: leafer.width - borderWidth,
-      //   height: leafer.height - borderWidth,
-      //   fill: 'transparent',
-      //   stroke: '#ffffff',
-      //   strokeWidth: borderWidth,
-      // });
+      const borderWidth = 20;
+      const border = new Rect({
+        x: borderWidth / 2,
+        y: borderWidth / 2,
+        width: leafer.width - borderWidth,
+        height: leafer.height - borderWidth,
+        fill: 'transparent',
+        stroke: '#ffffff',
+        strokeWidth: borderWidth,
+      });
 
-      // leafer.add(border);
+      leafer.add(border);
 
-      // // 添加装饰性圆圈
-      // const circle = new Image({
-      //   x: leafer.width - 60,
-      //   y: 20,
-      //   width: 50,
-      //   height: 50,
-      //   fill: 'rgba(255, 255, 255, 0.9)',
-      //   stroke: '#333333',
-      //   strokeWidth: 2,
-      //   cornerRadius: 25, // 圆形
-      // });
+      // 添加装饰性圆圈
+      const circle = new Image({
+        x: leafer.width - 60,
+        y: 20,
+        width: 50,
+        height: 50,
+        fill: 'rgba(255, 255, 255, 0.9)',
+        stroke: '#333333',
+        strokeWidth: 2,
+        cornerRadius: 25, // 圆形
+      });
 
-      // leafer.add(circle);
+      leafer.add(circle);
 
-      // // 添加相机图标
-      // const cameraIcon = new Text({
-      //   text: '📷',
-      //   x: leafer.width - 60,
-      //   y: 20,
-      //   fontSize: 20,
-      //   textAlign: 'center',
-      // });
+      // 添加相机图标
+      const cameraIcon = new Text({
+        text: '📷',
+        x: leafer.width - 60,
+        y: 20,
+        fontSize: 20,
+        textAlign: 'center',
+      });
 
-      // leafer.add(cameraIcon);
+      leafer.add(cameraIcon);
 
-      // // 添加分隔线
-      // const divider = new Rect({
-      //   x: 20,
-      //   y: leafer.height - 120,
-      //   width: leafer.width - 40,
-      //   height: 2,
-      //   fill: '#ffffff',
-      // });
+      // 添加分隔线
+      const divider = new Rect({
+        x: 20,
+        y: leafer.height - 120,
+        width: leafer.width - 40,
+        height: 2,
+        fill: '#ffffff',
+      });
 
-      // leafer.add(divider);
+      leafer.add(divider);
 
-      // // 添加EXIF信息文字
-      // exifData.forEach((item, index) => {
-      //   const text = new Text({
-      //     text: `${item.label}: ${item.value}`,
-      //     x: 20,
-      //     y: leafer.height - 110 + (index * 22),
-      //     fontSize: 14,
-      //     fontFamily: 'Arial',
-      //     fill: 'white',
-      //   });
-      //   leafer.add(text);
-      // });
+      // 添加EXIF信息文字
+      exifData.forEach((item, index) => {
+        const text = new Text({
+          text: `${item.label}: ${item.value}`,
+          x: 20,
+          y: leafer.height - 110 + (index * 22),
+          fontSize: 14,
+          fontFamily: 'Arial',
+          fill: 'white',
+        });
+        leafer.add(text);
+      });
 
       setIsProcessing(false);
       await updateProcessedImage();
