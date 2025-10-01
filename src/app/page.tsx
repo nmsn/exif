@@ -1,17 +1,51 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef } from 'react';
 import { Upload, Info, Camera } from 'lucide-react';
 import ExifReader from 'exifreader';
 import SimpleWatermarkEditor, { SimpleWatermarkEditorRef } from '@/components/SimpleWatermarkEditor';
 
 interface ExifData {
-  [key: string]: any;
+  [key: string]: { description: string };
 }
+
+const formatExifValue = (value: ExifData[keyof ExifData]): string => {
+  if (value && typeof value === 'object' && 'description' in value) {
+    return value.description;
+  }
+  return String(value || '未知');
+};
+
+const getImportantExifData = (exifData?: ExifData | null) => {
+  if (!exifData) return [];
+
+  const importantKeys = [
+    { key: 'Make', label: '相机品牌' },
+    { key: 'Model', label: '相机型号' },
+    { key: 'DateTime', label: '拍摄时间' },
+    { key: 'ExposureTime', label: '快门速度' },
+    { key: 'FNumber', label: '光圈值' },
+    { key: 'ISO', label: 'ISO感光度' },
+    { key: 'FocalLength', label: '焦距' },
+    { key: 'Flash', label: '闪光灯' },
+    { key: 'WhiteBalance', label: '白平衡' },
+    { key: 'GPS latitude', label: 'GPS纬度' },
+    { key: 'GPS longitude', label: 'GPS经度' },
+    { key: 'PixelXDimension', label: '图片宽度' },
+    { key: 'PixelYDimension', label: '图片高度' },
+  ];
+
+  return importantKeys
+    .map(({ key, label }) => ({
+      label,
+      value: formatExifValue(exifData[key])
+    }))
+    .filter(item => item.value !== '未知');
+};
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [exifData, setExifData] = useState<ExifData | null>(null);
+  const [exifData, setExifData] = useState<{ label: string; value: string; }[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -27,11 +61,12 @@ export default function Home() {
       // 读取图片并显示
       const imageUrl = URL.createObjectURL(file);
       setSelectedImage(imageUrl);
+      watermarkEditorRef.current?.loadImageFromUrl(imageUrl)
 
       // 提取EXIF信息
       const arrayBuffer = await file.arrayBuffer();
       const tags = ExifReader.load(arrayBuffer);
-      setExifData(tags);
+      setExifData(getImportantExifData(tags));
     } catch (error) {
       console.error('处理图片时出错:', error);
     } finally {
@@ -39,53 +74,9 @@ export default function Home() {
     }
   };
 
-  const formatExifValue = (value: any): string => {
-    if (value && typeof value === 'object' && 'description' in value) {
-      return value.description;
-    }
-    return String(value || '未知');
-  };
-
-  const getImportantExifData = (exifData?: ExifData | null) => {
-    if (!exifData) return [];
-
-    const importantKeys = [
-      { key: 'Make', label: '相机品牌' },
-      { key: 'Model', label: '相机型号' },
-      { key: 'DateTime', label: '拍摄时间' },
-      { key: 'ExposureTime', label: '快门速度' },
-      { key: 'FNumber', label: '光圈值' },
-      { key: 'ISO', label: 'ISO感光度' },
-      { key: 'FocalLength', label: '焦距' },
-      { key: 'Flash', label: '闪光灯' },
-      { key: 'WhiteBalance', label: '白平衡' },
-      { key: 'GPS latitude', label: 'GPS纬度' },
-      { key: 'GPS longitude', label: 'GPS经度' },
-    ];
-
-    return importantKeys
-      .map(({ key, label }) => ({
-        label,
-        value: formatExifValue(exifData[key])
-      }))
-      .filter(item => item.value !== '未知');
-  };
-
-  const resultExifData = useMemo((
-  ) => {
-    return getImportantExifData(exifData);
-  }, [exifData]);
-
   const handleImageProcessed = (dataUrl: string) => {
     setProcessedImageUrl(dataUrl);
   };
-
-  // 当选中的图片变化时，通知水印编辑器加载新图片
-  useEffect(() => {
-    if (selectedImage && watermarkEditorRef.current) {
-      watermarkEditorRef.current.loadImageFromUrl(selectedImage);
-    }
-  }, [selectedImage]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -152,14 +143,11 @@ export default function Home() {
               />
             </div>
 
-            {/* 水印编辑器 */}
-            {selectedImage && (
-              <SimpleWatermarkEditor
-                ref={watermarkEditorRef}
-                onImageProcessed={handleImageProcessed}
-                exifData={resultExifData}
-              />
-            )}
+            <SimpleWatermarkEditor
+              ref={watermarkEditorRef}
+              onImageProcessed={handleImageProcessed}
+              exifData={exifData}
+            />
 
             {/* 处理后的图片预览 */}
             {processedImageUrl && (
@@ -191,7 +179,7 @@ export default function Home() {
               </div>
             ) : exifData ? (
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {resultExifData.map((item, index) => (
+                {exifData.map((item, index) => (
                   <div key={index} className="flex justify-between items-start p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                     <span className="font-medium text-slate-700 dark:text-slate-300 min-w-0 flex-1">
                       {item.label}
@@ -202,7 +190,7 @@ export default function Home() {
                   </div>
                 ))}
 
-                {resultExifData.length === 0 && (
+                {exifData.length === 0 && (
                   <p className="text-slate-500 dark:text-slate-400 text-center py-4">
                     未找到EXIF信息
                   </p>
