@@ -142,15 +142,10 @@ function SimpleWatermarkEditor({
         url: imgUrl,
         width: canvasWidth,
         height: canvasHeight,
-        // 禁用renderSpread属性
-        renderSpread: undefined
       });
 
       // 添加图片到画布
-      leafer.add({
-        ...image,
-        renderSpread: undefined
-      });
+      leafer.add(image);
     } catch (error) {
       console.error('绘制原始图片失败:', error);
     }
@@ -172,15 +167,10 @@ function SimpleWatermarkEditor({
         url: imgUrl,
         width: leafer.width,
         height: leafer.height,
-        // 禁用renderSpread属性
-        renderSpread: undefined
       });
 
-      leafer.add({
-        ...image,
-        renderSpread: undefined
-      });
-      
+      leafer.add(image);
+
       const _height = leafer.height || 0;
 
       // 添加半透明背景渐变
@@ -201,10 +191,7 @@ function SimpleWatermarkEditor({
         },
       });
 
-      leafer.add({
-        ...gradientRect,
-        renderSpread: undefined
-      });
+      leafer.add(gradientRect);
 
       // 添加EXIF信息文字
       const startY = _height - 80;
