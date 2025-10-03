@@ -9,12 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@leafer-in/export": "^1.9.7",
-    "@leafer-ui/core": "^1.9.7",
-    "@leafer-ui/interface": "^1.9.7",
     "exifreader": "^4.31.2",
-    "leafer": "^1.9.6",
-    "leafer-ui": "^1.9.9",
+    "leafer-ui": "^1.9.10",
     "lucide-react": "^0.542.0",
     "next": "15.5.2",
     "react": "19.1.0",

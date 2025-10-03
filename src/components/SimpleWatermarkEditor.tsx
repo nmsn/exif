@@ -6,7 +6,7 @@ import { Palette, Download, RotateCcw } from 'lucide-react';
 
 interface SimpleWatermarkEditorProps {
   onImageProcessed: (dataUrl: string) => void;
-  exifData: Array<{ label: string; value: string }>
+  exifData: Array<{ key: string, label: string; value: string }>
   ref?: React.Ref<SimpleWatermarkEditorRef>;
 }
 
@@ -14,15 +14,27 @@ export interface SimpleWatermarkEditorRef {
   loadImageFromUrl: (url: string) => void;
 }
 
+const getImageDimensions = (exifDataArray: { label: string; value: string; }[]) => {
+  if (!exifDataArray || exifDataArray.length === 0) return { width: 0, height: 0 };
+
+  const widthItem = exifDataArray.find(item => item.label === '图片宽度');
+  const heightItem = exifDataArray.find(item => item.label === '图片高度');
+
+  return {
+    width: widthItem && widthItem.value !== '未知' ? parseInt(widthItem.value, 10) : 0,
+    height: heightItem && heightItem.value !== '未知' ? parseInt(heightItem.value, 10) : 0
+  };
+};
+
 function SimpleWatermarkEditor({
   onImageProcessed,
   exifData,
   ref
 }: SimpleWatermarkEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
+
   const leaferAppRef = useRef<Leafer | null>(null);
-  
+
   const [isProcessing, setIsProcessing] = useState(false);;
   const [imgUrl, setImageUrl] = useState('');
 
@@ -116,16 +128,10 @@ function SimpleWatermarkEditor({
       // 清空画布
       leafer.clear();
 
-      // 创建临时Image对象获取图片尺寸
-      const tempImg = new window.Image();
-      await new Promise((resolve, reject) => {
-        tempImg.onload = resolve;
-        tempImg.onerror = reject;
-        tempImg.src = imgUrl;
-      });
+      const { width, height } = getImageDimensions(exifData);
 
       // 计算合适的尺寸
-      const { width: canvasWidth, height: canvasHeight } = calculateFitDimensions(tempImg.width, tempImg.height);
+      const { width: canvasWidth, height: canvasHeight } = calculateFitDimensions(width, height);
 
       // 设置画布尺寸
       leafer.width = canvasWidth;
@@ -140,94 +146,99 @@ function SimpleWatermarkEditor({
         renderSpread: undefined
       });
 
-      // 等待图片加载完成
-      await new Promise((resolve, reject) => {
-        image.on('load', resolve);
-        image.on('error', reject);
-      });
-
       // 添加图片到画布
-      leafer.add(image);
+      leafer.add({
+        ...image,
+        renderSpread: undefined
+      });
     } catch (error) {
       console.error('绘制原始图片失败:', error);
     }
-  }, [getLeafer, calculateFitDimensions]);
+  }, [getLeafer, exifData, calculateFitDimensions]);
 
   // 添加简约水印
-const addMinimalWatermark = async () => {
-  const leafer = getLeafer();
-  if (!imgUrl || !leafer) return;
+  const addMinimalWatermark = async () => {
+    const leafer = getLeafer();
+    if (!imgUrl || !leafer) return;
 
-  setIsProcessing(true);
+    setIsProcessing(true);
 
-  try {
-    // 重新绘制原图
-    leafer.clear();
+    try {
+      // 重新绘制原图
+      leafer.clear();
 
-    // 使用 Leafer.js 加载并显示图片
-    const image = new Image({
-      url: imgUrl,
-      width: leafer.width,
-      height: leafer.height,
-      // 禁用renderSpread属性
-      renderSpread: undefined
-    });
-
-    leafer.add(image);
-
-    // 添加半透明背景渐变
-    const watermarkHeight = 100;
-    const gradientRect = new Rect({
-      x: 0,
-      y: leafer.height - watermarkHeight,
-      width: leafer.width,
-      height: watermarkHeight,
-      fill: {
-        type: 'linear',
-        from: 'top',
-        to: 'bottom',
-        stops: [
-          { offset: 0, color: 'rgba(0, 0, 0, 0)' },
-          { offset: 1, color: 'rgba(0, 0, 0, 0.7)' },
-        ],
-      },
-    });
-
-    leafer.add(gradientRect);
-
-    // 添加EXIF信息文字
-    const startY = leafer.height - 80;
-    exifData.slice(0, 3).forEach((item, index) => {
-      const text = new Text({
-        text: `${item.label}: ${item.value}`,
-        x: 20,
-        y: startY + (index * 22),
-        fontSize: 14,
-        fontFamily: 'Arial',
-        fill: 'white',
+      // 使用 Leafer.js 加载并显示图片
+      const image = new Image({
+        url: imgUrl,
+        width: leafer.width,
+        height: leafer.height,
+        // 禁用renderSpread属性
+        renderSpread: undefined
       });
-      leafer.add(text);
-    });
 
-    // 强制同步渲染到 canvas
-    if (leaferAppRef.current) {
-      try {
-        // 尝试强制刷新
-        leaferAppRef.current.forceRender?.();
-        // 等待一小段时间确保渲染完成
-        await new Promise(resolve => setTimeout(resolve, 200));
-      } catch (renderError) {
-        console.warn('强制渲染失败:', renderError);
+      leafer.add({
+        ...image,
+        renderSpread: undefined
+      });
+      
+      const _height = leafer.height || 0;
+
+      // 添加半透明背景渐变
+      const watermarkHeight = 100;
+      const gradientRect = new Rect({
+        x: 0,
+        y: _height - watermarkHeight,
+        width: leafer.width,
+        height: watermarkHeight,
+        fill: {
+          type: 'linear',
+          from: 'top',
+          to: 'bottom',
+          stops: [
+            { offset: 0, color: 'rgba(0, 0, 0, 0)' },
+            { offset: 1, color: 'rgba(0, 0, 0, 0.7)' },
+          ],
+        },
+      });
+
+      leafer.add({
+        ...gradientRect,
+        renderSpread: undefined
+      });
+
+      // 添加EXIF信息文字
+      const startY = _height - 80;
+      exifData.slice(0, 3).forEach((item, index) => {
+        const text = new Text({
+          text: `${item.label}: ${item.value}`,
+          x: 20,
+          y: startY + (index * 22),
+          fontSize: 14,
+          fontFamily: 'Arial',
+          fill: 'white',
+        });
+        leafer.add(text);
+      });
+
+      // 强制同步渲染到 canvas
+      if (leaferAppRef.current) {
+        try {
+          // 尝试强制刷新
+          leaferAppRef.current.forceRender?.();
+          // 等待一小段时间确保渲染完成
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (renderError) {
+          console.warn('强制渲染失败:', renderError);
+        }
       }
-    }
 
-    setIsProcessing(false);
-    await updateProcessedImage();
-  } catch (error) {
-    console.error('简约水印处理失败:', error);
-    setIsProcessing(false);
-  }
-};
+      setIsProcessing(false);
+      await updateProcessedImage();
+    } catch (error) {
+      console.error('简约水印处理失败:', error);
+      setIsProcessing(false);
+    }
+  };
 
   // 重置画布
   const resetCanvas = useCallback(() => {
@@ -261,9 +272,9 @@ const addMinimalWatermark = async () => {
 
       try {
         // 尝试访问内部 canvas 并导出
-        const canvas = (app as never).canvas || canvasRef.current;
+        const canvas = app .canvas || canvasRef.current;
         if (canvas) {
-          dataURL = canvas.toDataURL('image/jpeg', 0.9);
+          dataURL = await canvas.toDataURL('image/jpeg', 0.9);
         } else {
           throw new Error('无法访问 canvas');
         }
@@ -314,9 +325,9 @@ const addMinimalWatermark = async () => {
 
       try {
         // 尝试访问内部 canvas 并导出
-        const canvas = (app as unknown).canvas || canvasRef.current;
+        const canvas = app.canvas || canvasRef.current;
         if (canvas) {
-          dataURL = canvas.toDataURL('image/jpeg', 0.9);
+          dataURL = await canvas.toDataURL('image/jpeg', 0.9);
         } else {
           throw new Error('无法访问 canvas');
         }

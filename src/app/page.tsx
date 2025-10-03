@@ -37,6 +37,7 @@ const getImportantExifData = (exifData?: ExifData | null) => {
 
   return importantKeys
     .map(({ key, label }) => ({
+      key,
       label,
       value: formatExifValue(exifData[key])
     }))
@@ -45,7 +46,7 @@ const getImportantExifData = (exifData?: ExifData | null) => {
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [exifData, setExifData] = useState<{ label: string; value: string; }[]>([]);
+  const [exifData, setExifData] = useState<{ key:string, label: string; value: string; }[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
