@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@leafer-in/export':
+        specifier: ^1.9.10
+        version: 1.9.10(@leafer-in/interface@1.9.10(@leafer-ui/interface@1.9.10)(@leafer/interface@1.9.10))(@leafer-ui/draw@1.9.10)(@leafer-ui/interface@1.9.10)
       exifreader:
         specifier: ^4.31.2
         version: 4.31.2
@@ -269,6 +272,13 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@leafer-in/export@1.9.10':
+    resolution: {integrity: sha512-yA62svocmjJwZcnRmrocsmvAV4XsCAzx6/9RtUGL/KGwaPnmiqt6gq5m6jX5L2bJK8/kxiLviPyM/P12+6ky3g==}
+    peerDependencies:
+      '@leafer-in/interface': ^1.9.10
+      '@leafer-ui/draw': ^1.9.10
+      '@leafer-ui/interface': ^1.9.10
 
   '@leafer-in/interface@1.9.10':
     resolution: {integrity: sha512-HFnCdNqZyMdkyh8c0vq65s4IVfwE1jSZSg0snWEbyV2AIRrYBbRN8+4xMYI3bIKNycVAgrWu1ElFg3sNk/zxVQ==}
@@ -2138,6 +2148,12 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@leafer-in/export@1.9.10(@leafer-in/interface@1.9.10(@leafer-ui/interface@1.9.10)(@leafer/interface@1.9.10))(@leafer-ui/draw@1.9.10)(@leafer-ui/interface@1.9.10)':
+    dependencies:
+      '@leafer-in/interface': 1.9.10(@leafer-ui/interface@1.9.10)(@leafer/interface@1.9.10)
+      '@leafer-ui/draw': 1.9.10
+      '@leafer-ui/interface': 1.9.10
 
   '@leafer-in/interface@1.9.10(@leafer-ui/interface@1.9.10)(@leafer/interface@1.9.10)':
     dependencies:

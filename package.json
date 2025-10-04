@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@leafer-in/export": "^1.9.10",
     "exifreader": "^4.31.2",
     "leafer-ui": "^1.9.10",
     "lucide-react": "^0.542.0",

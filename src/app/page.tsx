@@ -48,7 +48,6 @@ export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [exifData, setExifData] = useState<{ key:string, label: string; value: string; }[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const watermarkEditorRef = useRef<SimpleWatermarkEditorRef>(null);
 
@@ -61,13 +60,15 @@ export default function Home() {
     try {
       // 读取图片并显示
       const imageUrl = URL.createObjectURL(file);
-      setSelectedImage(imageUrl);
-      watermarkEditorRef.current?.loadImageFromUrl(imageUrl)
-
-      // 提取EXIF信息
+       // 提取EXIF信息
       const arrayBuffer = await file.arrayBuffer();
       const tags = ExifReader.load(arrayBuffer);
       setExifData(getImportantExifData(tags));
+      const _exifData = getImportantExifData(tags);
+      setSelectedImage(imageUrl);
+      watermarkEditorRef.current?.loadImageFromUrl(imageUrl, _exifData)
+
+      setExifData(_exifData);
     } catch (error) {
       console.error('处理图片时出错:', error);
     } finally {
@@ -75,9 +76,7 @@ export default function Home() {
     }
   };
 
-  const handleImageProcessed = (dataUrl: string) => {
-    setProcessedImageUrl(dataUrl);
-  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -146,24 +145,7 @@ export default function Home() {
 
             <SimpleWatermarkEditor
               ref={watermarkEditorRef}
-              onImageProcessed={handleImageProcessed}
-              exifData={exifData}
             />
-
-            {/* 处理后的图片预览 */}
-            {processedImageUrl && (
-              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <Info className="w-5 h-5" />
-                  处理结果
-                </h2>
-                <img
-                  src={processedImageUrl}
-                  alt="处理后的照片"
-                  className="max-w-full rounded-lg shadow-md mx-auto"
-                />
-              </div>
-            )}
           </div>
 
           {/* 右侧：EXIF信息显示 */}

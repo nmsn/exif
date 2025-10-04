@@ -4,14 +4,14 @@ import { useEffect, useRef, useState, useCallback, useImperativeHandle } from 'r
 import { Leafer, Image, Rect, Text } from 'leafer-ui';
 import { Palette, Download, RotateCcw } from 'lucide-react';
 
+import '@leafer-in/export';
+
 interface SimpleWatermarkEditorProps {
-  onImageProcessed: (dataUrl: string) => void;
-  exifData: Array<{ key: string, label: string; value: string }>
   ref?: React.Ref<SimpleWatermarkEditorRef>;
 }
 
 export interface SimpleWatermarkEditorRef {
-  loadImageFromUrl: (url: string) => void;
+  loadImageFromUrl: (url: string, exifData: Array<{ key: string, label: string; value: string }>) => void;
 }
 
 const getImageDimensions = (exifDataArray: { label: string; value: string; }[]) => {
@@ -27,8 +27,6 @@ const getImageDimensions = (exifDataArray: { label: string; value: string; }[]) 
 };
 
 function SimpleWatermarkEditor({
-  onImageProcessed,
-  exifData,
   ref
 }: SimpleWatermarkEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -37,6 +35,7 @@ function SimpleWatermarkEditor({
 
   const [isProcessing, setIsProcessing] = useState(false);;
   const [imgUrl, setImageUrl] = useState('');
+  const [exifData, setExifData] = useState<Array<{ key: string, label: string; value: string }>>([]);
 
   // 辅助函数：获取leafer实例
   const getLeafer = useCallback(() => {
@@ -101,7 +100,7 @@ function SimpleWatermarkEditor({
   }, []);
 
   // 通过URL加载图片的函数
-  const loadImageFromUrl = (url: string) => {
+  const loadImageFromUrl = (url: string, exifData: Array<{ key: string, label: string; value: string }>) => {
     // 如果 Leafer.js 未初始化，则先初始化
     if (!leaferAppRef.current || !getLeafer()) {
       console.log('Leafer.js 未初始化，正在初始化...');
@@ -112,7 +111,8 @@ function SimpleWatermarkEditor({
       }
     }
     setImageUrl(url);
-    drawOriginalImage(url);
+    setExifData(exifData);
+    drawOriginalImage(url, exifData);
   };
 
   useImperativeHandle(ref, () => ({
@@ -120,7 +120,7 @@ function SimpleWatermarkEditor({
   }));
 
   // 绘制原始图片
-  const drawOriginalImage = useCallback(async (imgUrl: string) => {
+  const drawOriginalImage = useCallback(async (imgUrl: string, exifData: Array<{ key: string, label: string; value: string }>) => {
     const leafer = getLeafer();
     if (!leafer) return;
 
@@ -132,7 +132,7 @@ function SimpleWatermarkEditor({
 
       // 计算合适的尺寸
       const { width: canvasWidth, height: canvasHeight } = calculateFitDimensions(width, height);
-
+      debugger;
       // 设置画布尺寸
       leafer.width = canvasWidth;
       leafer.height = canvasHeight;
@@ -149,7 +149,7 @@ function SimpleWatermarkEditor({
     } catch (error) {
       console.error('绘制原始图片失败:', error);
     }
-  }, [getLeafer, exifData, calculateFitDimensions]);
+  }, [getLeafer, calculateFitDimensions]);
 
   // 添加简约水印
   const addMinimalWatermark = async () => {
@@ -220,7 +220,6 @@ function SimpleWatermarkEditor({
       }
 
       setIsProcessing(false);
-      await updateProcessedImage();
     } catch (error) {
       console.error('简约水印处理失败:', error);
       setIsProcessing(false);
@@ -235,132 +234,16 @@ function SimpleWatermarkEditor({
     try {
       leafer.clear();
       if (imgUrl) {
-        drawOriginalImage(imgUrl);
+        drawOriginalImage(imgUrl, exifData);
       }
     } catch (error) {
       console.error('重置画布失败:', error);
     }
-  }, [getLeafer, imgUrl, drawOriginalImage]);
-
-  // 更新处理后的图片
-  const updateProcessedImage = async () => {
-    const leafer = getLeafer();
-    if (!leaferAppRef.current || !leafer) return;
-
-    try {
-      // 使用 Leafer.js App 导出功能
-      const app = leaferAppRef.current;
-
-      // 等待渲染完成
-      // await app.waitRender();
-
-      // 尝试使用 Leafer.js 的导出功能
-      let dataURL: string;
-
-      try {
-        // 尝试访问内部 canvas 并导出
-        const canvas = app .canvas || canvasRef.current;
-        if (canvas) {
-          dataURL = await canvas.toDataURL('image/jpeg', 0.9);
-        } else {
-          throw new Error('无法访问 canvas');
-        }
-      } catch (exportError) {
-        console.warn('Leafer.js 导出失败，尝试降级方案:', exportError);
-
-        // 降级方案：使用 canvas
-        const canvas = canvasRef.current;
-        if (!canvas) {
-          throw new Error('Canvas 元素不存在');
-        }
-
-        dataURL = canvas.toDataURL('image/jpeg', 0.9);
-      }
-
-      // console.log('导出成功，数据长度:', dataURL.length);
-      onImageProcessed(dataURL);
-    } catch (error) {
-      console.error('导出失败:', error);
-
-      // 最后的降级方案
-      try {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const dataURL = canvas.toDataURL('image/jpeg', 0.9);
-        onImageProcessed(dataURL);
-      } catch (fallbackError) {
-        console.error('所有导出方法都失败:', fallbackError);
-      }
-    }
-  };
+  }, [getLeafer, imgUrl, drawOriginalImage, exifData]);
 
   // 下载图片
-  const downloadImage = async () => {
-    const leafer = getLeafer();
-    if (!leaferAppRef.current || !leafer) return;
-
-    try {
-      // 使用 Leafer.js App 导出功能
-      const app = leaferAppRef.current;
-
-      // 等待渲染完成
-      // await app.waitRender();
-
-      // 尝试使用 Leafer.js 的导出功能
-      let dataURL: string;
-
-      try {
-        // 尝试访问内部 canvas 并导出
-        const canvas = app.canvas || canvasRef.current;
-        if (canvas) {
-          dataURL = await canvas.toDataURL('image/jpeg', 0.9);
-        } else {
-          throw new Error('无法访问 canvas');
-        }
-      } catch (exportError) {
-        console.warn('Leafer.js 导出失败，尝试降级方案:', exportError);
-
-        // 降级方案：使用 canvas
-        const canvas = canvasRef.current;
-        if (!canvas) {
-          throw new Error('Canvas 元素不存在');
-        }
-
-        dataURL = canvas.toDataURL('image/jpeg', 0.9);
-      }
-
-      console.log('导出成功，数据长度:', dataURL.length);
-
-      const link = document.createElement('a');
-      link.download = `watermarked_${Date.now()}.jpg`;
-      link.href = dataURL;
-
-      // 确保链接被添加到 DOM 后再触发点击
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('下载图片失败:', error);
-
-      // 最后的降级方案
-      try {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const dataURL = canvas.toDataURL('image/jpeg', 0.9);
-
-        const link = document.createElement('a');
-        link.download = `watermarked_${Date.now()}.jpg`;
-        link.href = dataURL;
-
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (fallbackError) {
-        console.error('所有导出方法都失败:', fallbackError);
-      }
-    }
+  const onDownloadImage = async () => {
+    leaferAppRef.current?.export('screenshot.png', { screenshot: true })
   };
 
   return (
@@ -393,7 +276,7 @@ function SimpleWatermarkEditor({
         </button>
 
         <button
-          onClick={downloadImage}
+          onClick={onDownloadImage}
           disabled={isProcessing}
           className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg transition-colors"
         >
